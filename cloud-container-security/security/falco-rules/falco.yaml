@@ -1,0 +1,87 @@
+# Falco Configuration File
+# For ECS/Fargate deployment
+
+rules_file:
+  - /etc/falco/falco_rules.yaml
+  - /etc/falco/falco_rules.local.yaml
+  - /etc/falco/custom_rules.yaml
+
+# Output Channels
+json_output: true
+json_include_output_property: true
+json_include_tags_property: true
+
+# Logging
+log_stderr: true
+log_syslog: false
+log_level: info
+
+# Outputs
+stdout_output:
+  enabled: true
+
+file_output:
+  enabled: true
+  keep_alive: false
+  filename: /var/log/falco/events.log
+
+# For AWS CloudWatch integration
+syslog_output:
+  enabled: false
+
+program_output:
+  enabled: false
+  keep_alive: false
+  program: "jq '{text: .output}' | curl -d @- -X POST https://hooks.slack.com/services/XXX"
+
+http_output:
+  enabled: false
+  url: "http://your-webhook-url"
+
+# Performance tuning
+buffered_outputs: false
+outputs:
+  rate: 1
+  max_burst: 1000
+
+# Syscall event drops
+syscall_event_drops:
+  actions:
+    - log
+    - alert
+  rate: 0.03333
+  max_burst: 10
+
+# Priority levels
+priority: debug
+
+# Rules configuration
+rules_file:
+  - /etc/falco/falco_rules.yaml
+  - /etc/falco/custom_rules.yaml
+
+# Load default macros and lists
+load_plugins: []
+
+# Metrics
+metrics:
+  enabled: false
+  interval: 1h
+  output_rule: true
+  output_file: /var/log/falco/metrics.txt
+
+# gRPC output service
+grpc:
+  enabled: false
+  bind_address: "0.0.0.0:5060"
+  threadiness: 8
+
+grpc_output:
+  enabled: false
+
+# WebUI 
+webserver:
+  enabled: false
+  listen_port: 8765
+  k8s_healthz_endpoint: /healthz
+  ssl_enabled: false

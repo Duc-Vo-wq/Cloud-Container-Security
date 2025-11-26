@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfplan
+.terraform.lock.hcl
+crash.log
+crash.*.log
+
+# AWS
+.aws/
+deployment_outputs.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Docker
+*.tar
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Reports
+docs/reports/*.pdf
+trivy-results.*
+bandit-report.json
+sbom.json
+
+# Temporary files
+*.tmp
+tmp/
+temp/

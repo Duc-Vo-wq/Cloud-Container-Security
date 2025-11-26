@@ -1,0 +1,154 @@
+# Custom Falco Rules for Container Security
+# These rules detect suspicious activities in containers
+
+- rule: Unauthorized Process Spawned in Container
+  desc: Detect spawning of unauthorized processes in container
+  condition: >
+    spawned_process and
+    container and
+    not proc.name in (python, gunicorn, bash, sh, curl, wget) and
+    not proc.pname in (python, gunicorn)
+  output: >
+    Unauthorized process spawned in container
+    (user=%user.name command=%proc.cmdline container_id=%container.id 
+    container_name=%container.name image=%container.image.repository)
+  priority: WARNING
+  tags: [container, process, runtime]
+
+- rule: Write Below Binary Directory in Container
+  desc: Detect writes to system binary directories
+  condition: >
+    open_write and
+    container and
+    fd.directory in (/bin, /sbin, /usr/bin, /usr/sbin) and
+    not proc.name in (dpkg, rpm, yum, apt, apt-get)
+  output: >
+    Write to binary directory detected
+    (file=%fd.name command=%proc.cmdline container_id=%container.id
+    container_name=%container.name image=%container.image.repository)
+  priority: ERROR
+  tags: [container, filesystem, runtime]
+
+- rule: Read Sensitive File in Container
+  desc: Detect reading of sensitive files
+  condition: >
+    open_read and
+    container and
+    fd.name in (/etc/shadow, /etc/sudoers, /etc/pam.d/*, /root/.ssh/*)
+  output: >
+    Sensitive file access detected
+    (file=%fd.name command=%proc.cmdline user=%user.name
+    container_id=%container.id container_name=%container.name)
+  priority: WARNING
+  tags: [container, filesystem, credentials]
+
+- rule: Netcat Network Activity in Container
+  desc: Detect netcat usage for potential reverse shells
+  condition: >
+    spawned_process and
+    container and
+    (proc.name = netcat or proc.name = nc or proc.name = ncat)
+  output: >
+    Netcat network activity detected
+    (command=%proc.cmdline container_id=%container.id
+    container_name=%container.name user=%user.name)
+  priority: ERROR
+  tags: [container, network, reverse_shell]
+
+- rule: Shell Spawned in Container
+  desc: Detect interactive shell spawned in container (potential compromise)
+  condition: >
+    spawned_process and
+    container and
+    proc.name in (bash, sh, zsh) and
+    proc.args contains "-i"
+  output: >
+    Interactive shell spawned in container
+    (command=%proc.cmdline container_id=%container.id
+    container_name=%container.name user=%user.name parent=%proc.pname)
+  priority: WARNING
+  tags: [container, shell, runtime]
+
+- rule: Suspicious Network Connection from Container
+  desc: Detect connections to suspicious ports
+  condition: >
+    outbound and
+    container and
+    fd.sport_name in (4444, 5555, 6666, 7777, 8888, 31337)
+  output: >
+    Suspicious network connection detected
+    (connection=%fd.name command=%proc.cmdline container_id=%container.id
+    container_name=%container.name dest_port=%fd.sport)
+  priority: WARNING
+  tags: [container, network, command_and_control]
+
+- rule: Container Privilege Escalation Attempt
+  desc: Detect sudo or privilege escalation attempts
+  condition: >
+    spawned_process and
+    container and
+    proc.name in (sudo, su) and
+    not user.name = root
+  output: >
+    Privilege escalation attempt detected
+    (command=%proc.cmdline user=%user.name container_id=%container.id
+    container_name=%container.name)
+  priority: ERROR
+  tags: [container, privilege_escalation]
+
+- rule: Container Crypto Mining Activity
+  desc: Detect potential cryptocurrency mining
+  condition: >
+    spawned_process and
+    container and
+    (proc.name in (xmrig, minerd, cpuminer, ccminer) or
+    proc.cmdline contains "stratum+tcp" or
+    proc.cmdline contains "cryptonight")
+  output: >
+    Potential crypto mining detected
+    (command=%proc.cmdline container_id=%container.id
+    container_name=%container.name cpu=%proc.cpu)
+  priority: CRITICAL
+  tags: [container, crypto_mining, malware]
+
+- rule: Package Management in Running Container
+  desc: Detect package installation in running container (should be in image)
+  condition: >
+    spawned_process and
+    container and
+    proc.name in (apt, apt-get, yum, dnf, pip, pip3, npm, gem)
+  output: >
+    Package management tool executed in running container
+    (command=%proc.cmdline container_id=%container.id
+    container_name=%container.name image=%container.image.repository)
+  priority: WARNING
+  tags: [container, package_management, best_practice]
+
+- rule: File Integrity Monitor
+  desc: Monitor changes to application files
+  condition: >
+    open_write and
+    container and
+    fd.directory = /app and
+    not proc.name in (python, gunicorn)
+  output: >
+    Application file modified
+    (file=%fd.name command=%proc.cmdline user=%user.name
+    container_id=%container.id container_name=%container.name)
+  priority: WARNING
+  tags: [container, filesystem, integrity]
+
+- rule: Suspicious DNS Lookup
+  desc: Detect DNS lookups to suspicious domains
+  condition: >
+    evt.type = getaddrinfo and
+    container and
+    (fd.name contains ".onion" or
+    fd.name contains "pastebin" or
+    fd.name contains "ngrok")
+  output: >
+    Suspicious DNS lookup detected
+    (domain=%fd.name command=%proc.cmdline container_id=%container.id
+    container_name=%container.name)
+  priority: WARNING
+  tags: [container, network, dns]
