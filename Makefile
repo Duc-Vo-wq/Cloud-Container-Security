@@ -63,13 +63,19 @@ clean:
 
 init:
 	@echo "Initializing project..."
-	@echo "Installing local development dependencies..."
-	cd app && pip install -r requirements.txt
-	@echo "Installing Trivy..."
-	@which trivy > /dev/null || echo "Please install Trivy: https://aquasecurity.github.io/trivy/"
-	@echo "Checking AWS CLI..."
-	@which aws > /dev/null || echo "Please install AWS CLI"
-	@echo "Checking Terraform..."
-	@which terraform > /dev/null || echo "Please install Terraform"
+	@echo "Creating directory structure..."
+	@mkdir -p app/templates app/static .github/workflows terraform/modules/{vpc,ecr,ecs} security/falco-rules scripts/{deployment,attacks} docs/{diagrams,reports} tests
+	@echo "Checking if app files exist..."
+	@if [ ! -f app/requirements.txt ]; then \
+		echo "Warning: app/requirements.txt not found. Please create it."; \
+	else \
+		echo "Installing local development dependencies..."; \
+		cd app && pip install -r requirements.txt; \
+	fi
+	@echo "Checking tools..."
+	@echo "  Docker: $(command -v docker > /dev/null && echo '✓ Installed' || echo '✗ Not installed')"
+	@echo "  AWS CLI: $(command -v aws > /dev/null && echo '✓ Installed' || echo '✗ Not installed')"
+	@echo "  Terraform: $(command -v terraform > /dev/null && echo '✓ Installed' || echo '✗ Not installed')"
+	@echo "  Trivy: $(command -v trivy > /dev/null && echo '✓ Installed' || echo '✗ Use Docker version')"
 	@echo ""
-	@echo "Setup complete! Run 'make deploy' to start."
+	@echo "Setup complete! Create your files and run 'make build' to start."
